@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content projection</title>
+    <style>
+        /* Стили для input в слоте my-select */
+        my-select [slot="search"] input.select-popup-search {
+            width: 100%;
+            padding: 1rem 0.75rem;
+            background: #ffffff;
+            color: #334155;
+            box-sizing: border-box;
+            border-radius: 6px 6px 0 0;
+            border: none;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        my-select [slot="search"] input.select-popup-search:focus {
+            outline: 0 none;
+            border-bottom-color: #3B82F6;
+        }
+
+        my-select [slot="search"] input.select-popup-search::placeholder {
+            color: #94a3b8;
+        }
+    </style>
+    <script>
+        const showErrorInComponents = (componentName) => {
+            const elements = document.querySelectorAll(componentName);
+            elements.forEach(el => {
+                el.innerHTML = `<p style="color: red; padding: 20px;">
+                    Ошибка загрузки компонента ${componentName}
+                </p>`;
+            });
+        }
+
+        const onError = (err) => {
+            const script = err.target;
+            const componentName = script.dataset.name || 'unknown';
+            console.error(`Loading error ${componentName}.js:`, err);
+
+            showErrorInComponents(componentName);
+        };
+
+        const components = ['my-panel', 'my-select'];
+
+        components.forEach(component => {
+            const script = document.createElement('script');
+            script.src = `./${component}/${component}.js`;
+            script.dataset.name = component;
+            script.addEventListener('error', onError);
+            document.head.appendChild(script);
+        });
+    </script>
+</head>
+<body>
+    <my-panel header="Панель с my-select" toggleable>
+        <my-select id="mySelect">
+        <div slot="search">
+            <input class="select-popup-search" placeholder="Поиск...">   
+        </div>
+            <option value="1">Опция 1</option>
+            <option value="2">Опция 2</option>
+            <option value="3">Опция 3</option>
+            <option value="4">Опция 4</option>
+        </my-select>
+    </my-panel>
+
+</body>
+</html>
