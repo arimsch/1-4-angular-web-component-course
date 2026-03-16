@@ -69,7 +69,7 @@ class MyPanel extends HTMLElement {
   `;
 
   static #template = (() => {
-    const template = document.createElement('template');
+    const template = document.createElement("template");
     template.innerHTML = `
       <style>${MyPanel.#styles}</style>
       <div class="panel">
@@ -90,21 +90,23 @@ class MyPanel extends HTMLElement {
     return template;
   })();
 
+  // При изменении атрибута, указанного в observedAttributes(), вызывается attributeChangedCallback
+  static observedAttributes = ["header", "toggleable", "collapsed"];
+
   #panelContent;
   #toggleBtn;
   #panelFooter;
   #footerSlot;
   #arrow;
   #boundToggleHandler;
+  #boundSlotChangeHandler;
 
   constructor() {
     super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.appendChild(MyPanel.#template.content.cloneNode(true));
+    this.#initElements();
     this.#boundToggleHandler = this.#toggleHandler.bind(this);
-  }
-
-  // При изменении атрибута, указанного в observedAttributes(), вызывается attributeChangedCallback
-  static get observedAttributes() {
-    return ["header", "toggleable", "collapsed"];
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -120,51 +122,46 @@ class MyPanel extends HTMLElement {
   }
 
   connectedCallback() {
-    this.attachShadow({ mode: "open" });
-    this.#render();
+    this.#updateFooterVisibility();
     this.#attachEvents();
   }
 
   disconnectedCallback() {
     this.#toggleBtn?.removeEventListener("click", this.#boundToggleHandler);
-  }
-
-  #render() {
-    const content = MyPanel.#template.content.cloneNode(true);
-    this.shadowRoot.appendChild(content);
-    this.#initElements();
-    
-    this.#updateHeader();
-    this.#updateToggleState(this.hasAttribute("collapsed"));
-    this.#updateToggleButton();
-    this.#updateFooterVisibility();
+    this.#footerSlot?.removeEventListener(
+      "slotchange",
+      this.#boundSlotChangeHandler,
+    );
   }
 
   #createToggleButton(collapsed) {
-    const iconsContainer = this.shadowRoot.querySelector('.panel-icons');
+    const iconsContainer = this.shadowRoot.querySelector(".panel-icons");
     if (!iconsContainer) return;
 
-    const button = document.createElement('button');
-    button.className = 'panel-toggle-btn';
-    button.setAttribute('aria-label', 'Переключить панель');
-    
-    const arrow = document.createElement('span');
-    arrow.className = 'arrow';
+    const button = document.createElement("button");
+    button.className = "panel-toggle-btn";
+    button.setAttribute("aria-label", "Переключить панель");
+
+    const arrow = document.createElement("span");
+    arrow.className = "arrow";
     if (!collapsed) {
-      arrow.classList.add('expanded');
+      arrow.classList.add("expanded");
     }
-    
+
     button.appendChild(arrow);
     iconsContainer.appendChild(button);
-    
+
     return { button, arrow };
   }
 
   #updateHeader() {
-    const headerSlot = this.shadowRoot.querySelector('.panel-header-content slot[name="header"]');
+    const headerSlot = this.shadowRoot.querySelector(
+      '.panel-header-content slot[name="header"]',
+    );
     if (headerSlot) {
-      const span = headerSlot.nextElementSibling || headerSlot.querySelector('span');
-      if (span && span.tagName === 'SPAN') {
+      const span =
+        headerSlot.nextElementSibling || headerSlot.querySelector("span");
+      if (span && span.tagName === "SPAN") {
         span.textContent = this.getAttribute("header") || "Заголовок";
       }
     }
@@ -176,7 +173,7 @@ class MyPanel extends HTMLElement {
     if (toggleable && !this.#toggleBtn) {
       const collapsed = this.hasAttribute("collapsed");
       const { button, arrow } = this.#createToggleButton(collapsed);
-      
+
       this.#toggleBtn = button;
       this.#arrow = arrow;
       this.#attachEvents();
@@ -192,10 +189,12 @@ class MyPanel extends HTMLElement {
     if (this.#toggleBtn) {
       this.#toggleBtn.addEventListener("click", this.#boundToggleHandler);
     }
-    // Отслеживает изменения содержимого слота footer
-    if (this.#footerSlot) {
-      this.#footerSlot.addEventListener('slotchange', () => this.#updateFooterVisibility());
-    }
+
+    this.#boundSlotChangeHandler = () => this.#updateFooterVisibility();
+    this.#footerSlot.addEventListener(
+      "slotchange",
+      this.#boundSlotChangeHandler,
+    );
   }
 
   #toggleHandler() {
@@ -223,9 +222,9 @@ class MyPanel extends HTMLElement {
 
   #updateFooterVisibility() {
     if (!this.#panelFooter || !this.#footerSlot) return;
-    
+
     const hasFooterContent = this.#footerSlot.assignedNodes().length > 0;
-    this.#panelFooter.classList.toggle('hidden', !hasFooterContent);
+    this.#panelFooter.classList.toggle("hidden", !hasFooterContent);
   }
 }
 
